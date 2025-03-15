@@ -2,19 +2,19 @@ import pandas as pd
 import streamlit as st
 class DataAnalyzer:
     def __init__(self, df):
-        self.df = df
+        self.df = df.copy()
+        self.df['order_approved_at'] = pd.to_datetime(self.df['order_approved_at'])
 
     def create_daily_orders_df(self):
-        daily_orders_df = self.df.resample(rule='D', on='order_approved_at').agg({
+        daily_orders_df = self.df.set_index('order_approved_at').resample('D').agg({
             "order_id": "nunique",
             "payment_value": "sum"
-        })
-        daily_orders_df = daily_orders_df.reset_index()
+        }).reset_index()
+        
         daily_orders_df.rename(columns={
             "order_id": "order_count",
             "payment_value": "revenue"
         }, inplace=True)
-        
         return daily_orders_df
     
     def create_sum_spend_df(self):
