@@ -26,28 +26,10 @@ for col in datetime_cols:
 min_date = all_df["order_approved_at"].min()
 max_date = all_df["order_approved_at"].max()
 
-# Sidebar
-with st.sidebar:
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.write(' ')
-    with col2:
-        st.image("https://raw.githubusercontent.com/Atheashdq/analis-data/master/dashboard/logo.JPG"
-                 , width=100)
-    with col3:
-        st.write(' ')
-
-    # Rentang Tanggal
-    start_date, end_date = st.date_input(
-        label="Pilih Rentang Tanggal",
-        value=[min_date, max_date],
-        min_value=min_date,
-        max_value=max_date
-    )
+st.image("https://raw.githubusercontent.com/Atheashdq/analis-data/master/dashboard/logo.JPG", width=100)
 
 # Program Utama
-main_df = all_df[(all_df["order_approved_at"] >= str(start_date)) & 
-                 (all_df["order_approved_at"] <= str(end_date))]
+main_df = all_df
 
 function = DataAnalyzer(main_df)
 map_plot = BrazilMapPlotter(data, plt, mpimg, urllib, st)
@@ -130,18 +112,34 @@ with col1:
 
 with col2:
     avg_items = sum_order_items_df["product_count"].mean()
-    st.markdown(f"Rata-rata Barang: **{avg_items}**")
+    st.markdown(f"Rata-rata Barang: **{avg_items:.2f}**")
 
 fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(45, 25))
 
-sns.barplot(x="product_count", y="product_category_name_english", hue='product_category_name_english', data=sum_order_items_df.head(5), palette="viridis", ax=ax[0])
+# Data untuk 5 produk terlaris
+top_products = sum_order_items_df.head(5).copy()
+top_colors = ["green"] + ["grey"] * (len(top_products) - 1)  # Produk terlaris berwarna hijau, lainnya abu-abu
+
+# Data untuk 5 produk paling sedikit terjual
+least_products = sum_order_items_df.sort_values(by="product_count", ascending=True).head(5).copy()
+least_colors = ["red"] + ["grey"] * (len(least_products) - 1)  # Produk paling sedikit terjual berwarna merah, lainnya abu-abu
+
+# Plot produk paling laris
+bars = sns.barplot(x="product_count", y="product_category_name_english", data=top_products, ax=ax[0])
+for bar, color in zip(bars.patches, top_colors):
+    bar.set_color(color)
+
 ax[0].set_ylabel(None)
 ax[0].set_xlabel("Jumlah Terjual", fontsize=80)
 ax[0].set_title("Produk Paling Laris", loc="center", fontsize=90)
-ax[0].tick_params(axis ='y', labelsize=55)
-ax[0].tick_params(axis ='x', labelsize=50)
+ax[0].tick_params(axis='y', labelsize=55)
+ax[0].tick_params(axis='x', labelsize=50)
 
-sns.barplot(x="product_count", y="product_category_name_english", hue='product_category_name_english', data=sum_order_items_df.sort_values(by="product_count", ascending=True).head(5), palette="viridis", ax=ax[1])
+# Plot produk paling sedikit terjual
+bars = sns.barplot(x="product_count", y="product_category_name_english", data=least_products, ax=ax[1])
+for bar, color in zip(bars.patches, least_colors):
+    bar.set_color(color)
+
 ax[1].set_ylabel(None)
 ax[1].set_xlabel("Jumlah Terjual", fontsize=80)
 ax[1].invert_xaxis()
@@ -152,6 +150,7 @@ ax[1].tick_params(axis='y', labelsize=55)
 ax[1].tick_params(axis='x', labelsize=50)
 
 st.pyplot(fig)
+
 
 # Review Score
 st.subheader("Skor Review")
