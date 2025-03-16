@@ -37,9 +37,14 @@ class DataAnalyzer:
 
         return sum_order_items_df
 
+    
     def review_score_df(self):
         review_scores = self.df['review_score'].value_counts().sort_values(ascending=False)
-        most_common_score = review_scores.idxmax()
+
+        if review_scores.empty:
+            most_common_score = None
+        else:
+            most_common_score = review_scores.idxmax()
 
         return review_scores, most_common_score
 
