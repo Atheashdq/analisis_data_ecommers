@@ -23,13 +23,72 @@ data = geolocation.drop_duplicates(subset='customer_unique_id')
 for col in datetime_cols:
     all_df[col] = pd.to_datetime(all_df[col])
 
-min_date = all_df["order_approved_at"].min()
-max_date = all_df["order_approved_at"].max()
+
+min_date = all_df["order_approved_at"].min().date()
+max_date = all_df["order_approved_at"].max().date()
 
 st.image("https://raw.githubusercontent.com/Atheashdq/analis-data/master/dashboard/logo.JPG", width=100)
 
+
+# Sidebar
+with st.sidebar:
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.write(' ')
+    with col2:
+        st.image("https://raw.githubusercontent.com/Atheashdq/analis-data/master/dashboard/logo.JPG", width=100)
+    with col3:
+        st.write(' ')
+
+    # Rentang Tanggal (paksa user pilih 2 tanggal)
+    date_range = st.date_input(
+        label="Pilih Rentang Tanggal",
+        value=(min_date, max_date),  # default rentang
+        min_value=min_date,
+        max_value=max_date,
+        key="date_range_sidebar",
+        help="Pilih rentang tanggal (minimal 2 tanggal)"
+    )
+
+    # Validasi agar user pilih 2 tanggal
+    if isinstance(date_range, tuple) and len(date_range) == 2:
+        start_date, end_date = date_range
+
+        # Validasi tambahan: start_date tidak boleh setelah end_date
+        if start_date > end_date:
+            st.error("❌ Tanggal awal tidak boleh setelah tanggal akhir.")
+            st.stop()
+        else:
+            st.success(f"Menampilkan data dari **{start_date.strftime('%d %B %Y')}** sampai **{end_date.strftime('%d %B %Y')}**.")
+    else:
+        st.warning("⚠️ Harap pilih **rentang tanggal** dengan 2 tanggal.")
+        st.stop()
+
+
+# Main page
+st.title("Dashboard Analisis Data E-Commerce X di Negara Brazil")
+st.info(f"📅 Data pada dashboard ini ditampilkan dari **{start_date.strftime('%d %B %Y')}** hingga **{end_date.strftime('%d %B %Y')}**.")
+
+
+
+
+
+
+
+
+
+# Untuk menghindari unpack error
+if isinstance(date_range, tuple) or isinstance(date_range, list):
+    start_date, end_date = date_range
+else:
+    # fallback kalau cuma 1 tanggal
+    start_date = end_date = date_range
+
 # Program Utama
-main_df = all_df
+main_df = all_df[(all_df["order_approved_at"].dt.date >= start_date) & 
+                 (all_df["order_approved_at"].dt.date <= end_date)]
+
+
 
 function = DataAnalyzer(main_df)
 map_plot = BrazilMapPlotter(data, plt, mpimg, urllib, st)
@@ -162,7 +221,12 @@ with col1:
 
 with col2:
     most_common_review_score = review_score.value_counts().index[0]
-    st.markdown(f"Skor Review Terbanyak: **{most_common_review_score}**")
+    
+    if most_common_review_score is not None:
+        st.markdown(f"Skor Review Terbanyak: **{most_common_review_score}**")
+    else:
+        st.markdown("Tidak ada data review pada periode ini.")
+
 
 fig, ax = plt.subplots(figsize=(12, 6))
 sns.barplot(x=review_score.index, 
